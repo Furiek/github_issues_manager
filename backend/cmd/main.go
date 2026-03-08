@@ -15,13 +15,14 @@ import (
 
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Println("usage:")
-		fmt.Println("  issues create <owner> <repo> [--title <title>] [--body <body>] [--assignee <login>] [--assignees <a,b>] [--labels <l1,l2>] [--milestone <number|name>] [--type <type>] [title]")
+		utils.PrintUsage()
 		os.Exit(1)
 	}
 	action, err := utils.ParseAction(os.Args[1])
 	if err != nil {
-		log.Fatalf("Unrecognized or unsupported action was used: %s", action)
+		fmt.Printf("Error: unrecognized or unsupported action %q\n\n", os.Args[1])
+		utils.PrintUsage()
+		os.Exit(1)
 	}
 	switch action {
 	case "create":
@@ -68,10 +69,10 @@ func main() {
 		if v := strings.TrimSpace(*assigneeFlag); v != "" {
 			newIssue.Assignee = &v
 		}
-		if v := splitCommaList(*assigneesFlag); len(v) > 0 {
+		if v := utils.SplitCommaList(*assigneesFlag); len(v) > 0 {
 			newIssue.Assignees = v
 		}
-		if v := splitCommaList(*labelsFlag); len(v) > 0 {
+		if v := utils.SplitCommaList(*labelsFlag); len(v) > 0 {
 			newIssue.Labels = v
 		}
 		if v := strings.TrimSpace(*milestoneFlag); v != "" {
@@ -135,10 +136,10 @@ func main() {
 		if v := strings.TrimSpace(*assigneeFlag); v != "" {
 			newIssue.Assignee = &v
 		}
-		if v := splitCommaList(*assigneesFlag); len(v) > 0 {
+		if v := utils.SplitCommaList(*assigneesFlag); len(v) > 0 {
 			newIssue.Assignees = v
 		}
-		if v := splitCommaList(*labelsFlag); len(v) > 0 {
+		if v := utils.SplitCommaList(*labelsFlag); len(v) > 0 {
 			newIssue.Labels = v
 		}
 		if v := strings.TrimSpace(*milestoneFlag); v != "" {
@@ -171,16 +172,4 @@ func main() {
 	default:
 		log.Fatalf("unknown action: %s", action)
 	}
-}
-
-func splitCommaList(raw string) []string {
-	parts := strings.Split(raw, ",")
-	out := make([]string, 0, len(parts))
-	for _, p := range parts {
-		v := strings.TrimSpace(p)
-		if v != "" {
-			out = append(out, v)
-		}
-	}
-	return out
 }
