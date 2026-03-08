@@ -12,18 +12,37 @@ type IssuesSearchResult struct {
 }
 
 type Issue struct {
-	Number    int
-	HTMLURL   string `json:"html_url"`
-	Title     string
-	State     string
-	User      *User
-	CreatedAt time.Time `json:"created_at"`
-	Body      string
+	Number      int
+	HTMLURL     string `json:"html_url"`
+	Title       string
+	State       string
+	StateReason string `json:"state_reason"`
+	User        *User
+	Assignee    *User
+	Assignees   []*User
+	Labels      []Label
+	Milestone   *Milestone
+	Type        *IssueType
+	CreatedAt   time.Time `json:"created_at"`
+	Body        string
 }
 
 type User struct {
 	Login   string
 	HTMLURL string `json:"html_url"`
+}
+
+type Label struct {
+	Name string
+}
+
+type Milestone struct {
+	Number int
+	Title  string
+}
+
+type IssueType struct {
+	Name string
 }
 
 type NewIssue struct {
@@ -37,7 +56,13 @@ type NewIssue struct {
 }
 
 type IssueUpdate struct {
-	Title *string `json:"title,omitempty"`
-	Body  *string `json:"body,omitempty"`
-	State *string `json:"state,omitempty"`
+	Title       *string  `json:"title,omitempty"`
+	Body        *string  `json:"body,omitempty"`
+	Assignee    *string  `json:"assignee,omitempty"`
+	Milestone   any      `json:"milestone,omitempty"`
+	Labels      []string `json:"labels,omitempty"`
+	Assignees   []string `json:"assignees,omitempty"`
+	Type        *string  `json:"type,omitempty"`
+	State       *string  `json:"state,omitempty"`
+	StateReason *string  `json:"state_reason,omitempty"`
 }

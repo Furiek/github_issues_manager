@@ -4,12 +4,13 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
-// LoadDotEnv loads KEY=VALUE pairs from a dotenv-style file.
+// loadDotEnvFile loads KEY=VALUE pairs from a dotenv-style file.
 // Existing environment variables are left unchanged.
-func LoadDotEnv(path string) error {
+func loadDotEnvFile(path string) error {
 	f, err := os.Open(path)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -54,4 +55,45 @@ func LoadDotEnv(path string) error {
 		return fmt.Errorf("failed reading %s: %w", path, err)
 	}
 	return nil
+}
+
+// LoadDotEnvAuto searches for .env from the current working directory upward,
+// then from the executable directory upward.
+func LoadDotEnvAuto() error {
+	seen := map[string]struct{}{}
+	paths := []string{}
+
+	if cwd, err := os.Getwd(); err == nil {
+		paths = append(paths, dotEnvPathsFrom(cwd)...)
+	}
+	if exe, err := os.Executable(); err == nil {
+		paths = append(paths, dotEnvPathsFrom(filepath.Dir(exe))...)
+	}
+
+	for _, p := range paths {
+		clean := filepath.Clean(p)
+		if _, ok := seen[clean]; ok {
+			continue
+		}
+		seen[clean] = struct{}{}
+		if err := loadDotEnvFile(clean); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func dotEnvPathsFrom(start string) []string {
+	paths := []string{}
+	dir := filepath.Clean(start)
+	for {
+		paths = append(paths, filepath.Join(dir, ".env"))
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			break
+		}
+		dir = parent
+	}
+	return paths
 }
