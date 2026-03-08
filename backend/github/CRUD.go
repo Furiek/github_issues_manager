@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
-	"os"
 	"strconv"
 	"strings"
 )
@@ -20,17 +20,10 @@ func CreateIssue(owner, repo string, issue *NewIssue) (*Issue, error) {
 		return nil, err
 	}
 
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(body))
+	req, err := newGitHubRequest(http.MethodPost, url, bytes.NewBuffer(body))
 	if err != nil {
 		return nil, err
 	}
-
-	token := os.Getenv(APITokenEnvVar)
-	if token == "" {
-		return nil, fmt.Errorf("%s is not set", APITokenEnvVar)
-	}
-	req.Header.Set("Authorization", "token "+token)
-	req.Header.Set("Accept", "application/vnd.github+json")
 
 	client := &http.Client{}
 	res, err := client.Do(req)
@@ -40,6 +33,19 @@ func CreateIssue(owner, repo string, issue *NewIssue) (*Issue, error) {
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusCreated {
+		raw, _ := io.ReadAll(res.Body)
+
+		var apiErr struct {
+			Message string `json:"message"`
+		}
+		if err := json.Unmarshal(raw, &apiErr); err == nil && strings.TrimSpace(apiErr.Message) != "" {
+			return nil, fmt.Errorf("create issue failed: %s (%s)", res.Status, apiErr.Message)
+		}
+
+		msg := strings.TrimSpace(string(raw))
+		if msg != "" {
+			return nil, fmt.Errorf("create issue failed: %s (%s)", res.Status, msg)
+		}
 		return nil, fmt.Errorf("create issue failed: %s", res.Status)
 	}
 

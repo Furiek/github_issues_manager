@@ -35,8 +35,13 @@ type User struct {
 }
 
 type NewIssue struct {
-	Title string `json:"title"`
-	Body  string `json:"body,omitempty"`
+	Title     string   `json:"title"`
+	Body      string   `json:"body,omitempty"`
+	Assignee  *string  `json:"assignee,omitempty"`
+	Milestone any      `json:"milestone,omitempty"`
+	Labels    []string `json:"labels,omitempty"`
+	Assignees []string `json:"assignees,omitempty"`
+	Type      *string  `json:"type,omitempty"`
 }
 
 type IssueUpdate struct {
