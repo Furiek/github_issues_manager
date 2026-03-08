@@ -20,6 +20,7 @@ var (
 	kernel32           = syscall.NewLazyDLL("kernel32.dll")
 	procGetConsoleMode = kernel32.NewProc("GetConsoleMode")
 	procSetConsoleMode = kernel32.NewProc("SetConsoleMode")
+	procFlushInputBuf  = kernel32.NewProc("FlushConsoleInputBuffer")
 )
 
 func selectMenu(title string, items []string) (int, error) {
@@ -35,7 +36,12 @@ func selectMenu(title string, items []string) (int, error) {
 	if err := setConsoleMode(h, newMode); err != nil {
 		return 0, err
 	}
-	defer setConsoleMode(h, oldMode)
+	restored := false
+	defer func() {
+		if !restored {
+			_ = setConsoleMode(h, oldMode)
+		}
+	}()
 
 	sel := 0
 	buf := make([]byte, 8)
@@ -52,10 +58,18 @@ func selectMenu(title string, items []string) (int, error) {
 
 		b := buf[0]
 		if b == '\r' || b == '\n' {
+			if err := setConsoleMode(h, oldMode); err != nil {
+				return 0, err
+			}
+			restored = true
 			fmt.Print("\n")
 			return sel, nil
 		}
 		if b == 'q' || b == 'Q' {
+			if err := setConsoleMode(h, oldMode); err != nil {
+				return 0, err
+			}
+			restored = true
 			return -1, nil
 		}
 
@@ -79,6 +93,10 @@ func selectMenu(title string, items []string) (int, error) {
 			continue
 		}
 		if b == 0x1b && n == 1 {
+			if err := setConsoleMode(h, oldMode); err != nil {
+				return 0, err
+			}
+			restored = true
 			return -1, nil
 		}
 
@@ -166,5 +184,21 @@ func setConsoleMode(h syscall.Handle, mode uint32) error {
 		}
 		return syscall.EINVAL
 	}
+	return nil
+}
+
+func ensureLineInputMode() error {
+	h := syscall.Handle(os.Stdin.Fd())
+	var mode uint32
+	if err := getConsoleMode(h, &mode); err != nil {
+		return err
+	}
+
+	mode |= enableLineInput | enableEchoInput | enableProcessedInput
+	mode &^= enableVirtualTerminalInput
+	if err := setConsoleMode(h, mode); err != nil {
+		return err
+	}
+	_, _, _ = procFlushInputBuf.Call(uintptr(h))
 	return nil
 }

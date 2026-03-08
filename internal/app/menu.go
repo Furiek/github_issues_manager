@@ -265,20 +265,20 @@ func runIssueDetail(owner, repo string, number int) (bool, error) {
 			emptyFallback(issue.Body, "-"),
 		)
 
-		idx, err := selectMenu(title, []string{"Exit", "Back", "Edit"})
+		idx, err := selectMenu(title, []string{"Edit", "Back", "Exit"})
 		if err != nil {
 			return false, err
 		}
 		switch idx {
 		case 0:
-			return true, nil
-		case 1, -1:
-			return false, nil
-		case 2:
 			if err := editIssue(owner, repo, number); err != nil {
 				printJSONError(err)
 				waitForEnter("Press Enter to continue...")
 			}
+		case 1, -1:
+			return false, nil
+		case 2:
+			return true, nil
 		}
 	}
 }
@@ -423,6 +423,9 @@ func executeCommand(req commandRequest) error {
 }
 
 func readLine(prompt string) (string, error) {
+	if err := ensureLineInputMode(); err != nil {
+		return "", err
+	}
 	fmt.Print(prompt)
 	r := bufio.NewReader(os.Stdin)
 	line, err := r.ReadString('\n')
