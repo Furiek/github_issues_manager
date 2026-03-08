@@ -27,7 +27,7 @@ func PrintUsage(choice MenuChoice) {
 		fmt.Println("  Uses GITHUB_OWNER and GITHUB_REPO from environment")
 	case MenuUpdate:
 		fmt.Println("Update usage:")
-		fmt.Println("  issues update <issue_number> [--title <title>] [--body <body>] [--assignee <login>] [--assignees <a,b>] [--labels <l1,l2>] [--milestone <number|name>] [--type <type>]")
+		fmt.Println("  issues update <issue_number>|--number <issue_number> [--title <title>] [--body <body>] [--assignee <login>] [--assignees <a,b>] [--labels <l1,l2>] [--milestone <number|name>] [--type <type>] [--state <open|closed>] [--state-reason <completed|not_planned|reopened>]")
 		fmt.Println("  Uses GITHUB_OWNER and GITHUB_REPO from environment")
 	case MenuDelete:
 		fmt.Println("Delete usage:")
