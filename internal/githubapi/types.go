@@ -1,12 +1,4 @@
-// Copyright © 2016 Alan A. A. Donovan & Brian W. Kernighan.
-// License: https://creativecommons.org/licenses/by-nc-sa/4.0/
-
-// See page 110.
-//!+
-
-// Package github provides a Go API for the GitHub issue tracker.
-// See https://developer.github.com/v3/search/#search-issues.
-package github
+package githubapi
 
 import "time"
 
@@ -26,7 +18,7 @@ type Issue struct {
 	State     string
 	User      *User
 	CreatedAt time.Time `json:"created_at"`
-	Body      string    // in Markdown format
+	Body      string
 }
 
 type User struct {
@@ -49,5 +41,3 @@ type IssueUpdate struct {
 	Body  *string `json:"body,omitempty"`
 	State *string `json:"state,omitempty"`
 }
-
-//!-

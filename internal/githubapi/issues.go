@@ -1,4 +1,4 @@
-package github
+package githubapi
 
 import (
 	"bytes"
@@ -6,12 +6,9 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"net/url"
 	"strconv"
 	"strings"
 )
-
-// TODO: these have fairly similar sending procedures, can be grouped
 
 func CreateIssue(owner, repo string, issue *NewIssue) (*Issue, error) {
 	url := ReposURL + "/" + owner + "/" + repo + "/issues"
@@ -77,25 +74,4 @@ func DeleteIssue(owner, repo string, issueNumber int) bool {
 	_ = repo
 	_ = issueNumber
 	return false
-}
-
-// SearchIssues queries the GitHub issue tracker.
-func SearchIssues(terms []string) (*IssuesSearchResult, error) {
-	q := url.QueryEscape(strings.Join(terms, " "))
-	resp, err := http.Get(IssuesURL + "?q=" + q)
-	if err != nil {
-		return nil, err
-	}
-	if resp.StatusCode != http.StatusOK {
-		resp.Body.Close()
-		return nil, fmt.Errorf("search query failed: %s", resp.Status)
-	}
-
-	var result IssuesSearchResult
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		resp.Body.Close()
-		return nil, err
-	}
-	resp.Body.Close()
-	return &result, nil
 }
