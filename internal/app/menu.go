@@ -22,10 +22,12 @@ var mainMenuItems = []string{
 
 func runMenu() error {
 	for {
-		printBanner()
 		idx, err := selectMenu("Welcome to Github Issues Manager", mainMenuItems)
 		if err != nil {
 			return err
+		}
+		if idx < 0 {
+			continue
 		}
 
 		switch idx {
@@ -40,10 +42,14 @@ func runMenu() error {
 				waitForEnter("Press Enter to return to menu...")
 			}
 		case 2:
-			if err := runIssuesList(); err != nil {
+			exit, err := runIssuesList()
+			if err != nil {
 				printJSONError(err)
+				waitForEnter("Press Enter to return to menu...")
 			}
-			waitForEnter("Press Enter to return to menu...")
+			if exit {
+				return nil
+			}
 		case 3:
 			return nil
 		}
@@ -59,9 +65,6 @@ func printBanner() {
  ██╔══╝  ██║   ██║██╔══██╗██║██╔══╝  ██╔═██╗
  ██║     ╚██████╔╝██║  ██║██║███████╗██║  ██╗
  ╚═╝      ╚═════╝ ╚═╝  ╚═╝╚═╝╚══════╝╚═╝  ╚═╝
-
-               furiek
-
    ╔══════════════════════════════════════╗
    ║     Furiek's Github Issues Manager   ║
    ╚══════════════════════════════════════╝
@@ -102,6 +105,10 @@ func runCRUDHelper() error {
 	if err != nil {
 		return err
 	}
+	if idx < 0 {
+		return nil
+	}
+
 	switch idx {
 	case 0:
 		return helperCreate()
@@ -167,11 +174,11 @@ func helperUpdate() error {
 	if err != nil {
 		return err
 	}
-	state, err := readLine("State open|closed (empty to skip): ")
+	state, err := readLine("State (empty to skip): ")
 	if err != nil {
 		return err
 	}
-	stateReason, err := readLine("State reason completed|not_planned|reopened (empty to skip): ")
+	stateReason, err := readLine("State reason (empty to skip): ")
 	if err != nil {
 		return err
 	}
@@ -184,15 +191,9 @@ func helperUpdate() error {
 		upd.Body = &v
 	}
 	if v := strings.TrimSpace(state); v != "" {
-		if v != "open" && v != "closed" {
-			return errors.New("state must be open or closed")
-		}
 		upd.State = &v
 	}
 	if v := strings.TrimSpace(stateReason); v != "" {
-		if v != "completed" && v != "not_planned" && v != "reopened" {
-			return errors.New("state_reason must be completed, not_planned, or reopened")
-		}
 		upd.StateReason = &v
 	}
 
@@ -203,18 +204,166 @@ func helperUpdate() error {
 	})
 }
 
-func runIssuesList() error {
+func runIssuesList() (bool, error) {
 	owner, repo, err := config.RepoContextFromEnv()
 	if err != nil {
-		return err
+		return false, err
 	}
-	query := fmt.Sprintf("repo:%s/%s is:issue state:open", owner, repo)
-	result, err := githubapi.SearchIssues([]string{query})
+
+	for {
+		result, err := githubapi.SearchIssues([]string{fmt.Sprintf("repo:%s/%s is:issue", owner, repo)})
+		if err != nil {
+			return false, err
+		}
+		if len(result.Items) == 0 {
+			fmt.Println("No issues found.")
+			waitForEnter("Press Enter to return to menu...")
+			return false, nil
+		}
+
+		items := make([]string, 0, len(result.Items))
+		for _, it := range result.Items {
+			items = append(items, fmt.Sprintf("#%d %s", it.Number, it.Title))
+		}
+
+		idx, err := selectMenu("Issues list", items)
+		if err != nil {
+			return false, err
+		}
+		if idx < 0 {
+			return false, nil
+		}
+		if idx >= len(result.Items) {
+			continue
+		}
+
+		exitApp, err := runIssueDetail(owner, repo, result.Items[idx].Number)
+		if err != nil {
+			printJSONError(err)
+			waitForEnter("Press Enter to continue...")
+			continue
+		}
+		if exitApp {
+			return true, nil
+		}
+	}
+}
+
+func runIssueDetail(owner, repo string, number int) (bool, error) {
+	for {
+		issue, err := githubapi.GetIssue(owner, repo, number)
+		if err != nil {
+			return false, err
+		}
+
+		title := fmt.Sprintf(
+			"Issue #%d\nTitle: %s\nState: %s\nState reason: %s\nBody: %s",
+			issue.Number,
+			emptyFallback(issue.Title, "-"),
+			emptyFallback(issue.State, "-"),
+			emptyFallback(issue.StateReason, "-"),
+			emptyFallback(issue.Body, "-"),
+		)
+
+		idx, err := selectMenu(title, []string{"Exit", "Back", "Edit"})
+		if err != nil {
+			return false, err
+		}
+		switch idx {
+		case 0:
+			return true, nil
+		case 1, -1:
+			return false, nil
+		case 2:
+			if err := editIssue(owner, repo, number); err != nil {
+				printJSONError(err)
+				waitForEnter("Press Enter to continue...")
+			}
+		}
+	}
+}
+
+func editIssue(owner, repo string, number int) error {
+	fieldIdx, err := selectMenu("Select field to edit", []string{
+		"Title",
+		"Body",
+		"State",
+		"State reason",
+		"Assignee",
+		"Assignees (comma separated)",
+		"Labels (comma separated)",
+		"Type",
+		"Milestone",
+		"Back",
+	})
 	if err != nil {
 		return err
 	}
-	printJSONOK(result)
+	if fieldIdx < 0 || fieldIdx == 9 {
+		return nil
+	}
+
+	value, err := readLine("New value: ")
+	if err != nil {
+		return err
+	}
+	v := strings.TrimSpace(value)
+
+	update := &githubapi.IssueUpdate{}
+	switch fieldIdx {
+	case 0:
+		update.Title = &v
+	case 1:
+		update.Body = &v
+	case 2:
+		update.State = &v
+	case 3:
+		update.StateReason = &v
+	case 4:
+		update.Assignee = &v
+	case 5:
+		update.Assignees = splitComma(v)
+	case 6:
+		update.Labels = splitComma(v)
+	case 7:
+		update.Type = &v
+	case 8:
+		if n, err := strconv.Atoi(v); err == nil {
+			update.Milestone = n
+		} else {
+			update.Milestone = v
+		}
+	}
+
+	updated, err := githubapi.UpdateIssue(owner, repo, number, update)
+	if err != nil {
+		return err
+	}
+	printJSONOK(updated)
+	waitForEnter("Press Enter to continue...")
 	return nil
+}
+
+func splitComma(raw string) []string {
+	if strings.TrimSpace(raw) == "" {
+		return []string{}
+	}
+	parts := strings.Split(raw, ",")
+	out := make([]string, 0, len(parts))
+	for _, p := range parts {
+		s := strings.TrimSpace(p)
+		if s != "" {
+			out = append(out, s)
+		}
+	}
+	return out
+}
+
+func emptyFallback(v, fallback string) string {
+	if strings.TrimSpace(v) == "" {
+		return fallback
+	}
+	return v
 }
 
 func executeCommand(req commandRequest) error {

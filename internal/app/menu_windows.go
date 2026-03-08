@@ -39,10 +39,9 @@ func selectMenu(title string, items []string) (int, error) {
 
 	sel := 0
 	buf := make([]byte, 8)
+	renderMenu(title, items, sel)
 
 	for {
-		renderMenu(title, items, sel)
-
 		n, err := os.Stdin.Read(buf)
 		if err != nil {
 			return 0, err
@@ -56,30 +55,50 @@ func selectMenu(title string, items []string) (int, error) {
 			fmt.Print("\n")
 			return sel, nil
 		}
+		if b == 'q' || b == 'Q' {
+			return -1, nil
+		}
 
 		if b == 0x1b && n >= 3 && buf[1] == '[' {
+			prev := sel
 			switch buf[2] {
 			case 'A':
 				sel--
 			case 'B':
 				sel++
 			}
+			if sel < 0 {
+				sel = len(items) - 1
+			}
+			if sel >= len(items) {
+				sel = 0
+			}
+			if sel != prev {
+				updateMenuSelection(items, prev, sel)
+			}
+			continue
+		}
+		if b == 0x1b && n == 1 {
+			return -1, nil
 		}
 
 		if (b == 0x00 || b == 0xe0) && n >= 2 {
+			prev := sel
 			switch buf[1] {
 			case 72:
 				sel--
 			case 80:
 				sel++
 			}
-		}
-
-		if sel < 0 {
-			sel = len(items) - 1
-		}
-		if sel >= len(items) {
-			sel = 0
+			if sel < 0 {
+				sel = len(items) - 1
+			}
+			if sel >= len(items) {
+				sel = 0
+			}
+			if sel != prev {
+				updateMenuSelection(items, prev, sel)
+			}
 		}
 	}
 }
@@ -97,7 +116,30 @@ func renderMenu(title string, items []string, selected int) {
 		fmt.Printf("%s%s\n", prefix, it)
 	}
 	fmt.Println()
-	fmt.Println("Use Up/Down arrows and Enter.")
+	fmt.Println("Use Up/Down arrows and Enter. Press q to go back.")
+}
+
+func updateMenuSelection(items []string, oldSel, newSel int) {
+	paintMenuItem(items, oldSel, false)
+	paintMenuItem(items, newSel, true)
+}
+
+func paintMenuItem(items []string, idx int, selected bool) {
+	if idx < 0 || idx >= len(items) {
+		return
+	}
+
+	up := len(items) + 2 - idx
+	fmt.Printf("\x1b[%dA", up)
+	fmt.Print("\r\x1b[2K")
+	if selected {
+		fmt.Printf("> %s\n", items[idx])
+	} else {
+		fmt.Printf("  %s\n", items[idx])
+	}
+	if down := up - 1; down > 0 {
+		fmt.Printf("\x1b[%dB", down)
+	}
 }
 
 func waitForEnter(prompt string) {
