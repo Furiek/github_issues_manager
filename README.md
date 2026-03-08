@@ -17,6 +17,14 @@ Interactive Go CLI to create and search GitHub issues.
 - `GITHUB_REPO`
 
 Use `.env.example` as a template.
+The CLI auto-loads variables from `.env` in the project root.
+
+PowerShell (current session) example:
+```powershell
+$env:GITHUB_API_TOKEN="ghp_xxx"
+$env:GITHUB_OWNER="your-owner"
+$env:GITHUB_REPO="your-repo"
+```
 
 ## Run
 

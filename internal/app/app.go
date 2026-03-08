@@ -14,6 +14,10 @@ import (
 )
 
 func Run() error {
+	if err := config.LoadDotEnv(".env"); err != nil {
+		return err
+	}
+
 	fmt.Println("Hello. Welcome to GitHub Issues Manager.")
 	fmt.Println()
 	cli.PrintUsage(cli.MenuMain)
@@ -160,3 +164,12 @@ func runSearch(args []string) error {
 	}
 	return nil
 }
+
+// func runUpdate(args []string) error {
+// 	// owner, repo, err := config.RepoContextFromEnv()
+// 	// if err != nil {
+// 	// 	return err
+// 	// }
+
+// 	// return nil
+// }

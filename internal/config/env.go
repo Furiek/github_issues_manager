@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"slices"
 	"strings"
 )
 
@@ -14,8 +15,16 @@ const (
 func RepoContextFromEnv() (string, string, error) {
 	owner := strings.TrimSpace(os.Getenv(OwnerEnvVar))
 	repo := strings.TrimSpace(os.Getenv(RepoEnvVar))
-	if owner == "" || repo == "" {
-		return "", "", fmt.Errorf("%s and %s must be set in environment", OwnerEnvVar, RepoEnvVar)
+	missing := []string{}
+	if owner == "" {
+		missing = append(missing, OwnerEnvVar)
+	}
+	if repo == "" {
+		missing = append(missing, RepoEnvVar)
+	}
+	if len(missing) > 0 {
+		slices.Sort(missing)
+		return "", "", fmt.Errorf("missing required environment variable(s): %s", strings.Join(missing, ", "))
 	}
 	return owner, repo, nil
 }
