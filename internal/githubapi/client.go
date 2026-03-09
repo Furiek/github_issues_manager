@@ -12,6 +12,7 @@ import (
 
 const githubAPIVersion = "2022-11-28"
 
+// newGitHubRequest builds an authenticated GitHub request with required headers.
 func newGitHubRequest(method, url string, body io.Reader, hasJSONBody bool) (*http.Request, error) {
 	req, err := http.NewRequest(method, url, body)
 	if err != nil {
@@ -32,6 +33,7 @@ func newGitHubRequest(method, url string, body io.Reader, hasJSONBody bool) (*ht
 	return req, nil
 }
 
+// doJSON executes an HTTP request with an optional JSON payload and decodes JSON response.
 func doJSON(method, url string, payload any, expectedStatus int, out any) error {
 	var body io.Reader
 	hasJSONBody := false
