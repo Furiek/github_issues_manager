@@ -84,6 +84,7 @@ func LoadDotEnvAuto() error {
 	return nil
 }
 
+// dotEnvPathsFrom returns candidate .env paths from start up to the filesystem root.
 func dotEnvPathsFrom(start string) []string {
 	paths := []string{}
 	dir := filepath.Clean(start)

@@ -8,10 +8,13 @@ import (
 )
 
 const (
+	// OwnerEnvVar is the environment variable name for the repository owner.
 	OwnerEnvVar = "GITHUB_OWNER"
+	// RepoEnvVar is the environment variable name for the repository name.
 	RepoEnvVar  = "GITHUB_REPO"
 )
 
+// RepoContextFromEnv returns owner/repo values and errors if either is missing.
 func RepoContextFromEnv() (string, string, error) {
 	owner := strings.TrimSpace(os.Getenv(OwnerEnvVar))
 	repo := strings.TrimSpace(os.Getenv(RepoEnvVar))
