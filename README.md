@@ -29,8 +29,11 @@ $env:GITHUB_REPO="your-repo"
 ![alt text](image.png)
 
 ### Issues list
+#### Issues list view
 ![alt text](image-1.png)
+#### Selected issue view
 ![alt text](image-2.png)
+#### Edit issue view
 ![alt text](image-3.png)
 
 ## Run
