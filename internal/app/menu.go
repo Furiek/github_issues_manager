@@ -20,6 +20,17 @@ var mainMenuItems = []string{
 	"Exit",
 }
 
+var allowedIssueStates = map[string]struct{}{
+	"open":   {},
+	"closed": {},
+}
+
+var allowedIssueStateReasons = map[string]struct{}{
+	"completed":   {},
+	"not_planned": {},
+	"reopened":    {},
+}
+
 // runMenu drives the top-level interactive application menu.
 func runMenu() error {
 	for {
@@ -346,6 +357,10 @@ func editIssue(owner, repo string, number int) error {
 		}
 	}
 
+	if err := validateIssueUpdate(update); err != nil {
+		return err
+	}
+
 	updated, err := githubapi.UpdateIssue(owner, repo, number, update)
 	if err != nil {
 		return err
@@ -377,6 +392,37 @@ func emptyFallback(v, fallback string) string {
 		return fallback
 	}
 	return v
+}
+
+// validateIssueUpdate validates and normalizes constrained issue update fields.
+func validateIssueUpdate(update *githubapi.IssueUpdate) error {
+	if update == nil {
+		return errors.New("missing update payload")
+	}
+
+	if update.State != nil {
+		v := strings.ToLower(strings.TrimSpace(*update.State))
+		if v == "" {
+			return errors.New("state cannot be empty; allowed values: open, closed")
+		}
+		if _, ok := allowedIssueStates[v]; !ok {
+			return fmt.Errorf("invalid state %q; allowed values: open, closed", *update.State)
+		}
+		*update.State = v
+	}
+
+	if update.StateReason != nil {
+		v := strings.ToLower(strings.TrimSpace(*update.StateReason))
+		if v == "" {
+			return errors.New("state_reason cannot be empty; allowed values: completed, not_planned, reopened")
+		}
+		if _, ok := allowedIssueStateReasons[v]; !ok {
+			return fmt.Errorf("invalid state_reason %q; allowed values: completed, not_planned, reopened", *update.StateReason)
+		}
+		*update.StateReason = v
+	}
+
+	return nil
 }
 
 // executeCommand runs one command-mode request against the GitHub API.
@@ -415,8 +461,8 @@ func executeCommand(req commandRequest) error {
 		if req.Number <= 0 {
 			return errors.New("number must be > 0")
 		}
-		if req.Update == nil {
-			return errors.New("missing update payload")
+		if err := validateIssueUpdate(req.Update); err != nil {
+			return err
 		}
 		issue, err := githubapi.UpdateIssue(owner, repo, req.Number, req.Update)
 		if err != nil {
