@@ -8,6 +8,7 @@ import (
 	"strings"
 )
 
+// selectMenu renders a numeric menu for non-Windows terminals and returns the selected index.
 func selectMenu(title string, items []string) (int, error) {
 	if len(items) == 0 {
 		return -1, nil
@@ -42,11 +43,13 @@ func selectMenu(title string, items []string) (int, error) {
 	}
 }
 
+// waitForEnter blocks until the user presses Enter.
 func waitForEnter(prompt string) {
 	fmt.Print(prompt)
 	_, _ = readLine("")
 }
 
+// ensureLineInputMode is a no-op on non-Windows terminals.
 func ensureLineInputMode() error {
 	return nil
 }

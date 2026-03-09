@@ -10,6 +10,7 @@ import (
 )
 
 const (
+	// Windows console mode flags used to switch between menu and line input modes.
 	enableEchoInput            = 0x0004
 	enableLineInput            = 0x0002
 	enableProcessedInput       = 0x0001
@@ -17,12 +18,14 @@ const (
 )
 
 var (
+	// Kernel32 procedures for console mode management.
 	kernel32           = syscall.NewLazyDLL("kernel32.dll")
 	procGetConsoleMode = kernel32.NewProc("GetConsoleMode")
 	procSetConsoleMode = kernel32.NewProc("SetConsoleMode")
 	procFlushInputBuf  = kernel32.NewProc("FlushConsoleInputBuffer")
 )
 
+// selectMenu renders an interactive arrow-key menu and returns the selected item index.
 func selectMenu(title string, items []string) (int, error) {
 	h := syscall.Handle(os.Stdin.Fd())
 	var oldMode uint32
@@ -121,6 +124,7 @@ func selectMenu(title string, items []string) (int, error) {
 	}
 }
 
+// renderMenu draws the full menu with the provided selected item.
 func renderMenu(title string, items []string, selected int) {
 	fmt.Print("\x1b[2J\x1b[H")
 	printBanner()
@@ -137,11 +141,13 @@ func renderMenu(title string, items []string, selected int) {
 	fmt.Println("Use Up/Down arrows and Enter. Press q to go back.")
 }
 
+// updateMenuSelection repaints only the changed menu rows.
 func updateMenuSelection(items []string, oldSel, newSel int) {
 	paintMenuItem(items, oldSel, false)
 	paintMenuItem(items, newSel, true)
 }
 
+// paintMenuItem redraws one menu item at its terminal position.
 func paintMenuItem(items []string, idx int, selected bool) {
 	if idx < 0 || idx >= len(items) {
 		return
@@ -160,11 +166,13 @@ func paintMenuItem(items []string, idx int, selected bool) {
 	}
 }
 
+// waitForEnter blocks until the user confirms with Enter.
 func waitForEnter(prompt string) {
 	fmt.Print(prompt)
 	_, _ = readLine("")
 }
 
+// getConsoleMode reads the current Windows console input mode.
 func getConsoleMode(h syscall.Handle, mode *uint32) error {
 	r, _, e := procGetConsoleMode.Call(uintptr(h), uintptr(unsafe.Pointer(mode)))
 	if r == 0 {
@@ -176,6 +184,7 @@ func getConsoleMode(h syscall.Handle, mode *uint32) error {
 	return nil
 }
 
+// setConsoleMode updates the Windows console input mode.
 func setConsoleMode(h syscall.Handle, mode uint32) error {
 	r, _, e := procSetConsoleMode.Call(uintptr(h), uintptr(mode))
 	if r == 0 {
@@ -187,6 +196,7 @@ func setConsoleMode(h syscall.Handle, mode uint32) error {
 	return nil
 }
 
+// ensureLineInputMode configures stdin for regular line-based input reads.
 func ensureLineInputMode() error {
 	h := syscall.Handle(os.Stdin.Fd())
 	var mode uint32

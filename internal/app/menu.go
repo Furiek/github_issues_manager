@@ -20,6 +20,7 @@ var mainMenuItems = []string{
 	"Exit",
 }
 
+// runMenu drives the top-level interactive application menu.
 func runMenu() error {
 	for {
 		idx, err := selectMenu("Welcome to Github Issues Manager", mainMenuItems)
@@ -56,6 +57,7 @@ func runMenu() error {
 	}
 }
 
+// printBanner prints the application banner with ANSI color styling.
 func printBanner() {
 	fmt.Print("\x1b[95m")
 	fmt.Print(`
@@ -72,6 +74,7 @@ func printBanner() {
 	fmt.Print("\x1b[0m")
 }
 
+// commandRequest is the JSON shape accepted by command mode.
 type commandRequest struct {
 	Command string                 `json:"command"`
 	Number  int                    `json:"number,omitempty"`
@@ -80,6 +83,7 @@ type commandRequest struct {
 	Update  *githubapi.IssueUpdate `json:"update,omitempty"`
 }
 
+// runCommandMode reads a single JSON command and executes it.
 func runCommandMode() error {
 	fmt.Println()
 	fmt.Println(`Enter JSON request (single line). Example:`)
@@ -100,6 +104,7 @@ func runCommandMode() error {
 	return executeCommand(req)
 }
 
+// runCRUDHelper shows the CRUD shortcut menu and executes the selected action.
 func runCRUDHelper() error {
 	idx, err := selectMenu("CRUD operator helper", []string{"Create", "Read", "Update", "Back"})
 	if err != nil {
@@ -121,6 +126,7 @@ func runCRUDHelper() error {
 	}
 }
 
+// helperCreate prompts for issue details and creates a new issue.
 func helperCreate() error {
 	title, err := readLine("Title: ")
 	if err != nil {
@@ -141,6 +147,7 @@ func helperCreate() error {
 	return executeCommand(req)
 }
 
+// helperRead prompts for an issue number and fetches that issue.
 func helperRead() error {
 	raw, err := readLine("Issue number: ")
 	if err != nil {
@@ -156,6 +163,7 @@ func helperRead() error {
 	})
 }
 
+// helperUpdate prompts for an issue number and update fields, then applies the update.
 func helperUpdate() error {
 	raw, err := readLine("Issue number: ")
 	if err != nil {
@@ -204,6 +212,7 @@ func helperUpdate() error {
 	})
 }
 
+// runIssuesList shows repository issues and lets the user open an issue detail view.
 func runIssuesList() (bool, error) {
 	owner, repo, err := config.RepoContextFromEnv()
 	if err != nil {
@@ -249,6 +258,7 @@ func runIssuesList() (bool, error) {
 	}
 }
 
+// runIssueDetail shows one issue and handles detail actions.
 func runIssueDetail(owner, repo string, number int) (bool, error) {
 	for {
 		issue, err := githubapi.GetIssue(owner, repo, number)
@@ -283,6 +293,7 @@ func runIssueDetail(owner, repo string, number int) (bool, error) {
 	}
 }
 
+// editIssue prompts for a field update and sends a patch request for the issue.
 func editIssue(owner, repo string, number int) error {
 	fieldIdx, err := selectMenu("Select field to edit", []string{
 		"Title",
@@ -344,6 +355,7 @@ func editIssue(owner, repo string, number int) error {
 	return nil
 }
 
+// splitComma parses a comma-separated string into trimmed non-empty values.
 func splitComma(raw string) []string {
 	if strings.TrimSpace(raw) == "" {
 		return []string{}
@@ -359,6 +371,7 @@ func splitComma(raw string) []string {
 	return out
 }
 
+// emptyFallback returns fallback when v is blank after trimming.
 func emptyFallback(v, fallback string) string {
 	if strings.TrimSpace(v) == "" {
 		return fallback
@@ -366,6 +379,7 @@ func emptyFallback(v, fallback string) string {
 	return v
 }
 
+// executeCommand runs one command-mode request against the GitHub API.
 func executeCommand(req commandRequest) error {
 	owner, repo, err := config.RepoContextFromEnv()
 	if err != nil {
@@ -422,6 +436,7 @@ func executeCommand(req commandRequest) error {
 	}
 }
 
+// readLine reads one trimmed line from stdin after applying platform input mode setup.
 func readLine(prompt string) (string, error) {
 	if err := ensureLineInputMode(); err != nil {
 		return "", err
@@ -435,6 +450,7 @@ func readLine(prompt string) (string, error) {
 	return strings.TrimSpace(line), nil
 }
 
+// printJSONOK prints a success envelope as formatted JSON.
 func printJSONOK(data any) {
 	resp := map[string]any{
 		"ok":   true,
@@ -444,6 +460,7 @@ func printJSONOK(data any) {
 	fmt.Println(string(b))
 }
 
+// printJSONError prints an error envelope as formatted JSON.
 func printJSONError(err error) {
 	resp := map[string]any{
 		"ok":    false,
