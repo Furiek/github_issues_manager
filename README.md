@@ -4,9 +4,8 @@ Interactive Go CLI to create and search GitHub issues.
 
 ## Project Structure
 
-- `cmd/issues`: CLI entrypoint
+- `cmd`: CLI entrypoint (`main.go`)
 - `internal/app`: interactive flow and action routing
-- `internal/cli`: action parsing and menu/usage rendering
 - `internal/config`: environment configuration helpers
 - `internal/githubapi`: GitHub REST API client and models
 
@@ -29,5 +28,5 @@ $env:GITHUB_REPO="your-repo"
 ## Run
 
 ```bash
-go run ./cmd/issues
+go run ./cmd
 ```

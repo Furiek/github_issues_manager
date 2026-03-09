@@ -1,7 +1,6 @@
 package githubapi
 
 import (
-	"fmt"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -16,12 +15,6 @@ func CreateIssue(owner, repo string, issue *NewIssue) (*Issue, error) {
 		return nil, err
 	}
 	return &result, nil
-}
-
-// CloseIssue is a placeholder for closing an issue and is not implemented yet.
-func CloseIssue(owner, repo string, number int) (*Issue, error) {
-	url := ReposURL + "/" + owner + "/" + repo + "/issues/" + strconv.Itoa(number)
-	return nil, fmt.Errorf("not implemented: CloseIssue (%s)", url)
 }
 
 // UpdateIssue updates an existing issue by issue number.
@@ -42,14 +35,6 @@ func GetIssue(owner, repo string, issueNumber int) (*Issue, error) {
 		return nil, err
 	}
 	return &result, nil
-}
-
-// DeleteIssue is a placeholder and currently always returns false.
-func DeleteIssue(owner, repo string, issueNumber int) bool {
-	_ = owner
-	_ = repo
-	_ = issueNumber
-	return false
 }
 
 // SearchIssues queries issues using GitHub search terms.
